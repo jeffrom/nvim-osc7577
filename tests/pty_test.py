@@ -89,7 +89,7 @@ def main():
             r = reports[0]
             check(int(r["pid"]) == tui_pid, "pid is the TUI process")
             check(r["argv"][0] == "nvim" or r["argv"][0].startswith("/"), f"argv[0] = {r['argv'][0]}")
-            check(r["argv"][1:2] == ["-c"] and r["argv"][2].startswith("silent! source "), "argv shape")
+            check(len(r["argv"]) == 3 and r["argv"][1] == "-S" and r["argv"][2].startswith(sdir + "/"), "argv shape")
             check(r.get("cwd", "").startswith("/"), "cwd absolute")
             check(reports[-1].get("clear") == "1", "last sequence is clear")
             times = [int(x["time"]) for x in reports]

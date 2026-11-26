@@ -40,7 +40,7 @@ eq(true, seq:match(':mac=%x+\27\\$') ~= nil and #seq:match(':mac=(%x+)') == 64, 
 local function valid(argv, cwd)
   return (m._validate({ pid = 1, time = 2, argv = argv, cwd = cwd }))
 end
-eq(true, valid({ 'nvim', '-c', 'silent! source /a b.vim' }, '/tmp'), 'valid report')
+eq(true, valid({ 'nvim', '-S', '/a b.vim' }, '/tmp'), 'valid report')
 eq(true, valid({ '/opt/bin/nvim' }), 'absolute argv[0]')
 eq(false, valid({ './nvim' }), 'relative argv[0] rejected')
 eq(false, valid({ '-nvim' }), 'dash argv[0] rejected')

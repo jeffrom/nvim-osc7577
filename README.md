@@ -8,13 +8,62 @@ Requires Nvim 0.12+ (`nvim_ui_send()`). It does nothing unless the terminal sets
 
 ## Install
 
-Put it on your 'runtimepath'. The plugin enables itself, for example:
+The plugin sets itself up when it loads, so no `setup()` call is needed. Don't lazy-load it
+on a command or a key: it has to load at startup to report and to save the session.
+
+[lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
-vim.pack.add({ 'https://github.com/you/neovim-osc7577' })
--- or, for a local checkout:
-vim.opt.rtp:append('~/repos/neovim-osc7577')
+{ 'jeffrom/nvim-osc7577', lazy = false }
+-- with options (lazy.nvim passes them to setup()):
+{ 'jeffrom/nvim-osc7577', lazy = false, opts = { debounce_ms = 500 } }
 ```
+
+`vim.pack` (Nvim 0.12+):
+
+```lua
+vim.pack.add({ 'https://github.com/jeffrom/nvim-osc7577' })
+```
+
+[mini.deps](https://github.com/echasnovski/mini.deps):
+
+```lua
+MiniDeps.add({ source = 'jeffrom/nvim-osc7577' })
+```
+
+[vim-plug](https://github.com/junegunn/vim-plug):
+
+```vim
+Plug 'jeffrom/nvim-osc7577'
+```
+
+A local checkout:
+
+```lua
+vim.opt.rtp:append('~/repos/nvim-osc7577')
+```
+
+### Let the terminal trust it
+
+Getting reports isn't enough. A terminal resumes only commands it trusts, and Rex
+ships trust rules only for `claude`, `codex` and `opencode`. Without a rule, Rex keeps the
+record but never runs it, and its server log says
+`program resume record not trusted ... reason=no_rule`. Add this to `~/.config/rex/init.lua`:
+
+```lua
+-- Program Resume (OSC 7577): trust nvim-osc7577's resume command, `nvim -S <session file>`.
+local state = os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")
+rex.set("resume.trust", {
+  nvim = {
+    command = { "nvim", "-S", rex.match.under(state .. "/nvim/osc7577") },
+    flags = { ["-S"] = { "drop", values = 1 } },
+  },
+})
+```
+
+Then run `rex config reload`. `rex config check` should list the `nvim` rule. If you change
+`dir` (or `NVIM_APPNAME`), change the `rex.match.under()` path to match it. If `cmd` is an
+absolute path, use that path in place of `"nvim"`.
 
 Optional config, set before the plugin loads or passed to `setup()`:
 
@@ -34,8 +83,8 @@ Run `:checkhealth osc7577` to see what it's reporting.
 - **On startup:** takes `OSC7577_TOKEN` out of the environment, so `:terminal`, jobs and
   `system()` never see it. Then it creates `<dir>/<time>-<pid>.vim` with mode 0600, saves a
   session into it, and reports this resume command:
-  `nvim -c "silent! source <file>"` plus `cwd`. `silent!` makes a missing file start a
-  normal, empty Nvim.
+  `nvim -S <file>` plus `cwd`. The session file is a plain argument so that a terminal's
+  trust rule can match it by directory.
 - **While running:** re-saves the session (`:mksession!`, debounced) whenever windows,
   tabs or buffers change, on `CursorHold`, and right away on `FocusLost` and `VimSuspend`.
   It runs under `noautocmd` and restores `v:this_session`, so a session plugin you already
@@ -71,6 +120,8 @@ Run `:checkhealth osc7577` to see what it's reporting.
 
 - Resuming after a crash restores files from disk. Unsaved changes are in swap files, so you
   get Nvim's usual `ATTENTION`/recover prompt. That's intentional.
+- If the session file is gone when Nvim is resumed, `-S` shows `E484: Can't open file` and
+  Nvim starts empty.
 - `NVIM_APPNAME` and other environment variables aren't passed to the resumed process (the
   protocol has no env field). The session path is absolute, so it is still found.
 - What the session restores depends on your `'sessionoptions'`. With `terminal` in it,

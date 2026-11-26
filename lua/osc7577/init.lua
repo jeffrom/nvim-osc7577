@@ -1,6 +1,6 @@
 --- OSC 7577 "Program Resume" for Nvim.
 ---
---- Reports a resume command (`nvim -c "silent! source <session>"`) to the host terminal so it
+--- Reports a resume command (`nvim -S <session>`) to the host terminal so it
 --- can relaunch this Nvim, with its windows and buffers, after the terminal restarts.
 ---
 --- Spec: https://www.superlogical.com/rex/docs/build/program-resume
@@ -328,7 +328,9 @@ local function start()
   end
   pcall(uv.fs_chmod, state.path, tonumber('600', 8))
 
-  state.argv = { resolve_cmd(), '-c', 'silent! source ' .. vim.fn.fnameescape(state.path) }
+  -- `-S <file>` rather than `-c "source <file>"`: a terminal's trust rule can match a path
+  -- argument (Rex: `rex.match.under(dir)`), but not a command string. Nvim escapes it itself.
+  state.argv = { resolve_cmd(), '-S', state.path }
   save()
   pcall(prune)
 

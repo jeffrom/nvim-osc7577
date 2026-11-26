@@ -20,7 +20,13 @@ function M.check()
   if s.path then
     h.info('session file: ' .. s.path)
     h.info('resume argv: ' .. table.concat(s.argv, ' '))
+  elseif s.owner then
+    h.warn('not started yet: no session file (the plugin loads at VimEnter; is it lazy-loaded?)')
   end
+  h.info(
+    'the terminal still has to trust this command. Rex: add a `resume.trust` rule for nvim'
+      .. ' (see README), then check `rex config check`'
+  )
 end
 
 return M
